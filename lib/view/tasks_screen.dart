@@ -230,21 +230,26 @@ class _TasksScreenState extends State<TasksScreen> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Tasks'),
           BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle_outline, size: 32),
+            label: 'Add Task',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Calendar',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).primaryColor,
-        onTap: _onItemTapped,
+        onTap: (index) {
+          if (index == 1) {
+            _addTask();
+          } else {
+            setState(() {
+              _selectedIndex = index > 1 ? 1 : 0;
+            });
+          }
+        },
       ),
-      floatingActionButton:
-          _selectedIndex == 0
-              ? FloatingActionButton(
-                onPressed: _addTask,
-                child: const Icon(Icons.add),
-              )
-              : null,
     );
   }
 
