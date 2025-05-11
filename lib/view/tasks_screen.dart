@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/task.dart';
 import 'package:flutter_application_1/view/add_task_screen.dart';
 import 'package:flutter_application_1/view/edit_task_screen.dart';
+import 'package:flutter_application_1/view/calendar_screen.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -13,6 +14,13 @@ class TasksScreen extends StatefulWidget {
 
 class _TasksScreenState extends State<TasksScreen> {
   final List<Task> _tasks = [];
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   void _addTask() {
     Navigator.push(
@@ -202,23 +210,41 @@ class _TasksScreenState extends State<TasksScreen> {
         ],
       ),
       body:
-          _tasks.isEmpty
-              ? const Center(
-                child: Text(
-                  'No tasks yet!\nTap + to add a task',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
-                ),
-              )
-              : ListView.builder(
-                itemCount: _tasks.length,
-                itemBuilder:
-                    (context, index) => _buildTaskItem(_tasks[index], index),
-              ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTask,
-        child: const Icon(Icons.add),
+          _selectedIndex == 0
+              ? _tasks.isEmpty
+                  ? const Center(
+                    child: Text(
+                      'No tasks yet!\nTap + to add a task',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                  )
+                  : ListView.builder(
+                    itemCount: _tasks.length,
+                    itemBuilder:
+                        (context, index) =>
+                            _buildTaskItem(_tasks[index], index),
+                  )
+              : CalendarScreen(tasks: _tasks),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Tasks'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.calendar_today),
+            label: 'Calendar',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Theme.of(context).primaryColor,
+        onTap: _onItemTapped,
       ),
+      floatingActionButton:
+          _selectedIndex == 0
+              ? FloatingActionButton(
+                onPressed: _addTask,
+                child: const Icon(Icons.add),
+              )
+              : null,
     );
   }
 
