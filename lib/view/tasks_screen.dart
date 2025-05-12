@@ -1,10 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter_application_1/model/task.dart';
 import 'package:flutter_application_1/view/add_task_screen.dart';
 import 'package:flutter_application_1/view/edit_task_screen.dart';
 import 'package:flutter_application_1/view/calendar_screen.dart';
-import 'package:flutter_application_1/services/task_storage_service.dart';
+import 'package:flutter_application_1/controllers/task_controller.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -14,43 +15,8 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  List<Task> _tasks = [];
+  final TaskController taskController = Get.put(TaskController());
   int _selectedIndex = 0;
-  final _auth = FirebaseAuth.instance;
-  String _userName = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTasks();
-    _loadUserName();
-  }
-
-  Future<void> _loadUserName() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      setState(() {
-        _userName = user.displayName ?? user.email?.split('@')[0] ?? 'User';
-      });
-    }
-  }
-
-  Future<void> _loadTasks() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      final tasks = await TaskStorageService.loadTasks(user.uid);
-      setState(() {
-        _tasks = tasks;
-      });
-    }
-  }
-
-  Future<void> _saveTasks() async {
-    final user = _auth.currentUser;
-    if (user != null) {
-      await TaskStorageService.saveTasks(user.uid, _tasks);
-    }
-  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -59,67 +25,42 @@ class _TasksScreenState extends State<TasksScreen> {
   }
 
   void _addTask() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => AddTaskScreen(
-              onTaskAdded: (task) {
-                setState(() {
-                  _tasks.add(task);
-                });
-                _saveTasks();
-              },
-            ),
+    Get.to(
+      () => AddTaskScreen(
+        onTaskAdded: (task) {
+          taskController.addTask(task);
+        },
       ),
     );
   }
 
   void _editTask(Task task, int index) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => EditTaskScreen(
-              task: task,
-              onTaskUpdated: (updatedTask) {
-                setState(() {
-                  _tasks[index] = updatedTask;
-                });
-                _saveTasks();
-              },
-            ),
+    Get.to(
+      () => EditTaskScreen(
+        task: task,
+        onTaskUpdated: (updatedTask) {
+          taskController.updateTask(updatedTask, index);
+        },
       ),
     );
   }
 
   void _deleteTask(int index) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete Task'),
-            content: const Text('Are you sure you want to delete this task?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _tasks.removeAt(index);
-                  });
-                  _saveTasks();
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
-                ),
-              ),
-            ],
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Delete Task'),
+        content: const Text('Are you sure you want to delete this task?'),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              taskController.deleteTask(index);
+              Get.back();
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
+        ],
+      ),
     );
   }
 
@@ -131,10 +72,7 @@ class _TasksScreenState extends State<TasksScreen> {
         leading: Checkbox(
           value: task.isCompleted,
           onChanged: (value) {
-            setState(() {
-              task.isCompleted = value ?? false;
-            });
-            _saveTasks();
+            taskController.toggleTaskCompletion(index);
           },
         ),
         title: Text(
@@ -236,42 +174,47 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Welcome, $_userName!'),
-            const Text('My Tasks', style: TextStyle(fontSize: 14)),
-          ],
+        title: Obx(
+          () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Welcome, ${taskController.userName.value}!'),
+              const Text('My Tasks', style: TextStyle(fontSize: 14)),
+            ],
+          ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/login', (route) => false);
+              Get.offAllNamed('/login');
             },
           ),
         ],
       ),
-      body:
-          _selectedIndex == 0
-              ? _tasks.isEmpty
-                  ? const Center(
-                    child: Text(
-                      'No tasks yet!\nTap + to add a task',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                  )
-                  : ListView.builder(
-                    itemCount: _tasks.length,
-                    itemBuilder:
-                        (context, index) =>
-                            _buildTaskItem(_tasks[index], index),
-                  )
-              : CalendarScreen(tasks: _tasks),
+      body: Obx(() {
+        if (taskController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return _selectedIndex == 0
+            ? taskController.tasks.isEmpty
+                ? const Center(
+                  child: Text(
+                    'No tasks yet!\nTap + to add a task',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                )
+                : ListView.builder(
+                  itemCount: taskController.tasks.length,
+                  itemBuilder:
+                      (context, index) =>
+                          _buildTaskItem(taskController.tasks[index], index),
+                )
+            : CalendarScreen(tasks: taskController.tasks);
+      }),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Tasks'),

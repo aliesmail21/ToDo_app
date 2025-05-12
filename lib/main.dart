@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter_application_1/view/login.dart';
 import 'package:flutter_application_1/view/registration_screen.dart';
 import 'package:flutter_application_1/view/splash_screen.dart';
@@ -34,7 +35,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primaryColor: Colors.blue,
@@ -53,14 +54,13 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      
-      initialRoute: '/', 
-      routes: {
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterationScreen(),
-        '/tasks': (context) => const TasksScreen(),
-      },
+      initialRoute: '/',
+      getPages: [
+        GetPage(name: '/', page: () => const SplashScreen()),
+        GetPage(name: '/login', page: () => const LoginScreen()),
+        GetPage(name: '/register', page: () => const RegisterationScreen()),
+        GetPage(name: '/tasks', page: () => const TasksScreen()),
+      ],
     );
   }
 }

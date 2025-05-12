@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/controller/validator.dart';
+import 'package:flutter_application_1/controllers/validator.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
