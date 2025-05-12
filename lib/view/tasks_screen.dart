@@ -4,6 +4,7 @@ import 'package:flutter_application_1/model/task.dart';
 import 'package:flutter_application_1/view/add_task_screen.dart';
 import 'package:flutter_application_1/view/edit_task_screen.dart';
 import 'package:flutter_application_1/view/calendar_screen.dart';
+import 'package:flutter_application_1/services/task_storage_service.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
@@ -13,8 +14,43 @@ class TasksScreen extends StatefulWidget {
 }
 
 class _TasksScreenState extends State<TasksScreen> {
-  final List<Task> _tasks = [];
+  List<Task> _tasks = [];
   int _selectedIndex = 0;
+  final _auth = FirebaseAuth.instance;
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _userName = user.displayName ?? user.email?.split('@')[0] ?? 'User';
+      });
+    }
+  }
+
+  Future<void> _loadTasks() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final tasks = await TaskStorageService.loadTasks(user.uid);
+      setState(() {
+        _tasks = tasks;
+      });
+    }
+  }
+
+  Future<void> _saveTasks() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await TaskStorageService.saveTasks(user.uid, _tasks);
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -32,6 +68,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() {
                   _tasks.add(task);
                 });
+                _saveTasks();
               },
             ),
       ),
@@ -49,6 +86,7 @@ class _TasksScreenState extends State<TasksScreen> {
                 setState(() {
                   _tasks[index] = updatedTask;
                 });
+                _saveTasks();
               },
             ),
       ),
@@ -72,6 +110,7 @@ class _TasksScreenState extends State<TasksScreen> {
                   setState(() {
                     _tasks.removeAt(index);
                   });
+                  _saveTasks();
                   Navigator.pop(context);
                 },
                 child: const Text(
@@ -95,6 +134,7 @@ class _TasksScreenState extends State<TasksScreen> {
             setState(() {
               task.isCompleted = value ?? false;
             });
+            _saveTasks();
           },
         ),
         title: Text(
@@ -196,7 +236,13 @@ class _TasksScreenState extends State<TasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Tasks'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Welcome, $_userName!'),
+            const Text('My Tasks', style: TextStyle(fontSize: 14)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),

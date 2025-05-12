@@ -1,10 +1,10 @@
 class Validators {
   static String? validateName(String? value) {
     if (value == null || value.isEmpty) {
-      return "First Name is required";
+      return "Name is required";
     }
-    if (!RegExp(r'^[a-zA-Z]').hasMatch(value)) {
-      return "Only letters are allowed";
+    if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+      return "Only letters and spaces are allowed";
     }
     return null;
   }
@@ -13,8 +13,8 @@ class Validators {
     if (value == null || value.isEmpty) {
       return "Email is required";
     }
-    if (!value.contains("@")) {
-      return "Email must contain @";
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return "Please enter a valid email address";
     }
     return null;
   }
@@ -34,7 +34,7 @@ class Validators {
       return "Confirm your password";
     }
     if (value != password) {
-      return "Password don't match";
+      return "Passwords don't match";
     }
     return null;
   }

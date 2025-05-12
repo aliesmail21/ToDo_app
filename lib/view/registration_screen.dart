@@ -27,6 +27,44 @@ class _RegisterationScreenState extends State<RegisterationScreen> {
     super.dispose();
   }
 
+  Future<void> _registerUser() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        // Create user with email and password
+        final credential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+              email: _emailController.text,
+              password: _passwordController.text,
+            );
+
+        // Update user profile with full name
+        await credential.user?.updateDisplayName(
+          '${_firstNameController.text} ${_lastNameController.text}',
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+        Navigator.of(context).pushReplacementNamed('/tasks');
+      } on FirebaseAuthException catch (e) {
+        String message = 'An error occurred';
+        if (e.code == 'weak-password') {
+          message = 'The password provided is too weak.';
+        } else if (e.code == 'email-already-in-use') {
+          message = 'The account already exists for that email.';
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,29 +151,7 @@ class _RegisterationScreenState extends State<RegisterationScreen> {
               const SizedBox(height: 30),
 
               ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Registration successful!')),
-                    );
-                  }
-                  try {
-                    final credential = await FirebaseAuth.instance
-                        .createUserWithEmailAndPassword(
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                        );
-                    Navigator.of(context).pushReplacementNamed('/tasks');
-                  } on FirebaseAuthException catch (e) {
-                    if (e.code == 'weak-password') {
-                      print('The password provided is too weak.');
-                    } else if (e.code == 'email-already-in-use') {
-                      print('The account already exists for that email.');
-                    }
-                  } catch (e) {
-                    print(e);
-                  }
-                },
+                onPressed: _registerUser,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
