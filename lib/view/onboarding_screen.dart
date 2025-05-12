@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/model/onboarding_model.dart';
-import 'package:flutter_application_1/view/login.dart';
+import 'package:get/get.dart';
+import 'package:flutter_application_1/controllers/onboarding_controller.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({Key? key}) : super(key: key);
@@ -25,11 +26,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     });
   }
 
-  void _navigateToLogin() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
-    );
+  void _navigateToLogin() async {
+    try {
+      await OnboardingController.to.completeOnboarding();
+      Get.offAllNamed('/login');
+    } catch (e) {
+      print('Error navigating to login: $e');
+      // Fallback navigation if GetX fails
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override

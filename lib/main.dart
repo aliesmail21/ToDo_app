@@ -6,10 +6,17 @@ import 'package:flutter_application_1/view/login.dart';
 import 'package:flutter_application_1/view/registration_screen.dart';
 import 'package:flutter_application_1/view/splash_screen.dart';
 import 'package:flutter_application_1/view/tasks_screen.dart';
+import 'package:flutter_application_1/view/onboarding_screen.dart';
+import 'package:flutter_application_1/controllers/onboarding_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  // Initialize OnboardingController
+  final onboardingController = Get.put(OnboardingController());
+  await onboardingController.checkFirstTime();
+
   runApp(const MyApp());
 }
 
@@ -54,8 +61,9 @@ class _MyAppState extends State<MyApp> {
           ),
         ),
       ),
-      initialRoute: '/',
+      initialRoute: OnboardingController.to.isFirstTime ? '/onboarding' : '/',
       getPages: [
+        GetPage(name: '/onboarding', page: () => const OnboardingScreen()),
         GetPage(name: '/', page: () => const SplashScreen()),
         GetPage(name: '/login', page: () => const LoginScreen()),
         GetPage(name: '/register', page: () => const RegisterationScreen()),
