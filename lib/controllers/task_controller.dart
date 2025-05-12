@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_1/model/task.dart';
 import 'package:flutter_application_1/services/task_storage_service.dart';
+import 'package:flutter/material.dart';
 
 class TaskController extends GetxController {
   final _auth = FirebaseAuth.instance;
@@ -109,14 +110,39 @@ class TaskController extends GetxController {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        tasks[index].isCompleted = !tasks[index].isCompleted;
+        // Create a new task with the updated completion status
+        final updatedTask = Task(
+          id: tasks[index].id,
+          title: tasks[index].title,
+          description: tasks[index].description,
+          priority: tasks[index].priority,
+          dueDate: tasks[index].dueDate,
+          isCompleted: !tasks[index].isCompleted,
+        );
+
+        // Update the task in the list
+        tasks[index] = updatedTask;
+
+        // Save to storage
         await TaskStorageService.saveTasks(user.uid, tasks);
+
+        // Show success message
+        Get.snackbar(
+          'Success',
+          'Task status updated',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green[100],
+          colorText: Colors.green[900],
+          duration: const Duration(seconds: 2),
+        );
       }
     } catch (e) {
       Get.snackbar(
         'Error',
         'Failed to update task status',
         snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red[100],
+        colorText: Colors.red[900],
       );
     }
   }

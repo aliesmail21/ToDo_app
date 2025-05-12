@@ -16,11 +16,19 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Sign out any existing user when the login screen is opened
+    FirebaseAuth.instance.signOut();
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
   // snackbar for log in failed
   void _showErrorSnackbar(String title, String message) {
     Get.snackbar(
@@ -90,12 +98,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     try {
+                      // Sign out any existing user before attempting to sign in
+                      await FirebaseAuth.instance.signOut();
+
                       final credential = await FirebaseAuth.instance
                           .signInWithEmailAndPassword(
-                            email: _emailController.text,
+                            email: _emailController.text.trim(),
                             password: _passwordController.text,
                           );
-                      Navigator.of(context).pushReplacementNamed('/tasks');
+
+                      if (!mounted) return;
+                      Get.offAllNamed('/tasks');
                     } on FirebaseAuthException catch (e) {
                       switch (e.code) {
                         case 'user-not-found':
@@ -153,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text("Don't have an account?"),
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/register');
+                      Get.offAllNamed('/register');
                     },
                     child: const Text('Register'),
                   ),
