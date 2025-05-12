@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/controllers/validator.dart';
+import 'package:get/get.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,20 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+  // snackbar for log in failed
+  void _showErrorSnackbar(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.red[100],
+      colorText: Colors.red[900],
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.all(10),
+      borderRadius: 10,
+      icon: const Icon(Icons.error_outline, color: Colors.red),
+    );
   }
 
   @override
@@ -73,18 +88,51 @@ class _LoginScreenState extends State<LoginScreen> {
               // Login Button
               ElevatedButton(
                 onPressed: () async {
-                  try {
-                    final credential = await FirebaseAuth.instance
-                        .signInWithEmailAndPassword(
-                          email: _emailController.text,
-                          password: _passwordController.text,
-                        );
-                    Navigator.of(context).pushReplacementNamed('/tasks');
-                  } on FirebaseAuthException catch (e) {
-                    if (e.code == 'user-not-found') {
-                      print('No user found for that email.');
-                    } else if (e.code == 'wrong-password') {
-                      print('Wrong password provided for that user.');
+                  if (_formKey.currentState!.validate()) {
+                    try {
+                      final credential = await FirebaseAuth.instance
+                          .signInWithEmailAndPassword(
+                            email: _emailController.text,
+                            password: _passwordController.text,
+                          );
+                      Navigator.of(context).pushReplacementNamed('/tasks');
+                    } on FirebaseAuthException catch (e) {
+                      switch (e.code) {
+                        case 'user-not-found':
+                          _showErrorSnackbar(
+                            'Login Failed',
+                            'No user found with this email.',
+                          );
+                          break;
+                        case 'wrong-password':
+                          _showErrorSnackbar(
+                            'Login Failed',
+                            'Wrong password provided.',
+                          );
+                          break;
+                        case 'invalid-email':
+                          _showErrorSnackbar(
+                            'Login Failed',
+                            'The email address is not valid.',
+                          );
+                          break;
+                        case 'user-disabled':
+                          _showErrorSnackbar(
+                            'Login Failed',
+                            'This user account has been disabled.',
+                          );
+                          break;
+                        default:
+                          _showErrorSnackbar(
+                            'Login Failed',
+                            'An error occurred. Please try again.',
+                          );
+                      }
+                    } catch (e) {
+                      _showErrorSnackbar(
+                        'Error',
+                        'An unexpected error occurred. Please try again.',
+                      );
                     }
                   }
                 },
